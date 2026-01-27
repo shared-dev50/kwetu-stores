@@ -14,16 +14,16 @@ const Navbar = () => {
             </NavLink>
           </li>
           <li>
-            <NavLink to="/sales" className={linkClass}>
-              Sales
-            </NavLink>
-          </li>
-
-          <li>
             <NavLink to="/products" className={linkClass}>
               Products
             </NavLink>
           </li>
+          <li>
+            <NavLink to="/inventory" className={linkClass}>
+              Inventory
+            </NavLink>
+          </li>
+
           <li>
             <NavLink to="/invoices" className={linkClass}>
               Invoices
