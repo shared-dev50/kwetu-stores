@@ -1,7 +1,7 @@
 import axios from "axios";
 import CartPanel from "../components/Cart";
 import ProductCard from "../components/ProductCard";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CartItem, Product } from "../entities/types";
 
 interface ApiResponse {
@@ -14,7 +14,7 @@ const Products = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = useCallback((product: Product) => {
     setCart(prev => {
       const exists = prev.find(item => item.product.id === product.id);
       if (exists) {
@@ -26,8 +26,53 @@ const Products = () => {
       }
       return [...prev, { product, quantity: 1 }];
     });
-  };
+  }, []);
 
+  // BARCODE SCANNING LOGIC
+  const scanBufferRef = useRef("");
+  const scanTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA"
+      )
+        return;
+
+      if (e.key === "Enter") {
+        if (scanBufferRef.current.length > 0) {
+          const foundProduct = products.find(
+            p => p.barcode === scanBufferRef.current,
+          );
+          if (foundProduct) handleAddToCart(foundProduct);
+          scanBufferRef.current = "";
+        }
+        if (scanTimeout.current) clearTimeout(scanTimeout.current);
+        return;
+      }
+
+      if (e.key.length === 1) {
+        scanBufferRef.current += e.key;
+
+        if (scanTimeout.current) clearTimeout(scanTimeout.current);
+
+        scanTimeout.current = setTimeout(() => {
+          scanBufferRef.current = "";
+        }, 2000);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Cleanup function
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      if (scanTimeout.current) clearTimeout(scanTimeout.current);
+    };
+  }, [products, handleAddToCart]);
+
+  // FETCH PRODUCTS
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -46,8 +91,6 @@ const Products = () => {
   return (
     <div className="h-full flex">
       <div className="flex-1 p-6 space-y-4">
-        {/* <input type="text" autoFocus className="absolute" /> */}
-
         <div className="flex items-center gap-4">
           <input
             type="text"
