@@ -1,86 +1,142 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+interface Product {
+  id?: number;
+  barcode: string;
+  name: string;
+  price: string | number;
+  created_at?: string;
+}
+
+interface ApiResponse {
+  status: number;
+  message: string;
+  data: Product[];
+}
+
 const Inventory = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [newProduct, setNewProduct] = useState<Product>({
+    barcode: "",
+    name: "",
+    price: "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewProduct(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const addProduct = async () => {
+    if (!newProduct.name || !newProduct.barcode || !newProduct.price) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    try {
+      const payload = {
+        ...newProduct,
+        price: Number(newProduct.price),
+      };
+
+      const res = await axios.post<{ data: Product }>(
+        "http://localhost:5001/api/products",
+        payload,
+      );
+
+      const savedProduct = res.data.data;
+      setProducts(prev => [...prev, savedProduct]);
+
+      setNewProduct({
+        barcode: "",
+        name: "",
+        price: "",
+      });
+
+      alert("Product added successfully!");
+    } catch (err) {
+      console.error(err);
+      if (axios.isAxiosError(err)) {
+        alert(err.response?.data?.message || "Failed to add product");
+      } else {
+        alert("An unexpected error occurred");
+      }
+    }
+  };
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await axios.get<ApiResponse>(
+          "http://localhost:5001/api/products",
+        );
+
+        setProducts(res.data.data);
+      } catch (err) {
+        console.error(err);
+        alert("Failed to fetch products");
+      }
+    };
+    fetchProducts();
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Inventory</h1>
-        <button className="btn btn-primary">Add New Product</button>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-2 mt-4 flex-wrap">
         <input
           type="text"
-          placeholder="Search product..."
-          className="input input-bordered w-full max-w-md"
+          name="barcode"
+          placeholder="Barcode"
+          value={newProduct.barcode}
+          onChange={handleChange}
+          className="input input-bordered"
         />
-        <select className="select select-bordered">
-          <option>All Categories</option>
-          <option>Food</option>
-          <option>Household</option>
-        </select>
-        <select className="select select-bordered">
-          <option>All Stock</option>
-          <option>Low Stock</option>
-          <option>Out of Stock</option>
-        </select>
+        <input
+          type="text"
+          name="name"
+          placeholder="Product Name"
+          value={newProduct.name}
+          onChange={handleChange}
+          className="input input-bordered"
+        />
+        <input
+          type="number"
+          name="price"
+          placeholder="Price"
+          value={newProduct.price}
+          onChange={handleChange}
+          className="input input-bordered"
+        />
+        <button className="btn btn-primary" onClick={addProduct}>
+          Add Product
+        </button>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto mt-6">
         <table className="table table-zebra w-full">
           <thead>
             <tr>
-              <th>Product Name</th>
-              <th>SKU</th>
-              <th>Category</th>
-              <th>Stock</th>
+              <th>Name</th>
+              <th>Barcode</th>
               <th>Price</th>
-              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Rice 5kg</td>
-              <td>SKU-1023</td>
-              <td>Food</td>
-              <td>12</td>
-              <td>KSh 750</td>
-              <td>
-                <button className="btn btn-xs btn-warning">Edit</button>
-                <button className="btn btn-xs btn-error ml-2">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Sugar 2kg</td>
-              <td>SKU-1024</td>
-              <td>Food</td>
-              <td>4</td>
-              <td>KSh 320</td>
-              <td>
-                <button className="btn btn-xs btn-warning">Edit</button>
-                <button className="btn btn-xs btn-error ml-2">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Cooking Oil 1L</td>
-              <td>SKU-2211</td>
-              <td>Food</td>
-              <td>0</td>
-              <td>KSh 420</td>
-              <td>
-                <button className="btn btn-xs btn-warning">Edit</button>
-                <button className="btn btn-xs btn-error ml-2">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td>Maize Flour 2kg</td>
-              <td>SKU-3300</td>
-              <td>Food</td>
-              <td>25</td>
-              <td>KSh 130</td>
-              <td>
-                <button className="btn btn-xs btn-warning">Edit</button>
-                <button className="btn btn-xs btn-error ml-2">Delete</button>
-              </td>
-            </tr>
+            {products.map(prod => (
+              <tr key={prod.id}>
+                <td>{prod.name}</td>
+                <td>{prod.barcode}</td>
+                <td>$ {prod.price}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
