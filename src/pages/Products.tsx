@@ -1,18 +1,13 @@
-import axios from "axios";
 import CartPanel from "../components/Cart";
 import ProductCard from "../components/ProductCard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { CartItem, Product } from "../entities/types";
-
-interface ApiResponse {
-  status: number;
-  message: string;
-  data: Product[];
-}
+import useGetAllProducts from "../hooks/useGetAllProducts";
 
 const Products = () => {
-  const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
+
+  const { data: products } = useGetAllProducts();
 
   const handleAddToCart = useCallback((product: Product) => {
     setCart(prev => {
@@ -42,7 +37,7 @@ const Products = () => {
 
       if (e.key === "Enter") {
         if (scanBufferRef.current.length > 0) {
-          const foundProduct = products.find(
+          const foundProduct = products?.find(
             p => p.barcode === scanBufferRef.current,
           );
           if (foundProduct) handleAddToCart(foundProduct);
@@ -72,22 +67,6 @@ const Products = () => {
     };
   }, [products, handleAddToCart]);
 
-  // FETCH PRODUCTS
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await axios.get<ApiResponse>(
-          "http://localhost:5001/api/products",
-        );
-
-        setProducts(res.data.data);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to fetch products");
-      }
-    };
-    fetchProducts();
-  }, []);
   return (
     <div className="h-full flex">
       <div className="flex-1 p-6 space-y-4">
@@ -112,7 +91,7 @@ const Products = () => {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products.map(prod => (
+          {products?.map(prod => (
             <ProductCard
               key={prod.id}
               product={prod}

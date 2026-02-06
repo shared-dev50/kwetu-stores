@@ -1,23 +1,20 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+import { useState } from "react";
+import useGetAllProducts from "../hooks/useGetAllProducts";
+import useAddProduct from "../hooks/useAddProduct";
 
 interface Product {
   id?: number;
   barcode: string;
   name: string;
-  price: string | number;
+  price: number; // Keep this as number
   created_at?: string;
 }
 
-interface ApiResponse {
-  status: number;
-  message: string;
-  data: Product[];
-}
-
 const Inventory = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [newProduct, setNewProduct] = useState<Product>({
+  const { data: products, isLoading, error } = useGetAllProducts();
+  const { mutate, isPending } = useAddProduct();
+
+  const [newProduct, setNewProduct] = useState({
     barcode: "",
     name: "",
     price: "",
@@ -31,64 +28,38 @@ const Inventory = () => {
     }));
   };
 
-  const addProduct = async () => {
-    if (!newProduct.name || !newProduct.barcode || !newProduct.price) {
+  const handleAddProduct = () => {
+    const { name, barcode, price } = newProduct;
+
+    if (!name || !barcode || !price) {
       alert("Please fill in all fields");
       return;
     }
 
-    try {
-      const payload = {
-        ...newProduct,
-        price: Number(newProduct.price),
-      };
+    const payload: Product = {
+      name,
+      barcode,
+      price: Number(price),
+    };
 
-      const res = await axios.post<{ data: Product }>(
-        "http://localhost:5001/api/products",
-        payload,
-      );
-
-      const savedProduct = res.data.data;
-      setProducts(prev => [...prev, savedProduct]);
-
-      setNewProduct({
-        barcode: "",
-        name: "",
-        price: "",
-      });
-
-      alert("Product added successfully!");
-    } catch (err) {
-      console.error(err);
-      if (axios.isAxiosError(err)) {
-        alert(err.response?.data?.message || "Failed to add product");
-      } else {
-        alert("An unexpected error occurred");
-      }
-    }
+    mutate(payload, {
+      onSuccess: () => {
+        alert("Product added successfully!");
+        setNewProduct({ barcode: "", name: "", price: "" });
+      },
+      onError: err => {
+        alert(err.message || "Failed to add product");
+      },
+    });
   };
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await axios.get<ApiResponse>(
-          "http://localhost:5001/api/products",
-        );
-
-        setProducts(res.data.data);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to fetch products");
-      }
-    };
-    fetchProducts();
-  }, []);
+  if (isLoading) return <div className="p-6">Loading inventory...</div>;
+  if (error)
+    return <div className="p-6 text-error">Error: {error.message}</div>;
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Inventory</h1>
-      </div>
+      <h1 className="text-2xl font-bold">Inventory</h1>
 
       <div className="flex gap-2 mt-4 flex-wrap">
         <input
@@ -115,8 +86,13 @@ const Inventory = () => {
           onChange={handleChange}
           className="input input-bordered"
         />
-        <button className="btn btn-primary" onClick={addProduct}>
-          Add Product
+
+        <button
+          className="btn btn-primary"
+          onClick={handleAddProduct}
+          disabled={isPending}
+        >
+          {isPending ? "Adding..." : "Add Product"}
         </button>
       </div>
 
@@ -130,11 +106,11 @@ const Inventory = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map(prod => (
+            {products?.map(prod => (
               <tr key={prod.id}>
                 <td>{prod.name}</td>
                 <td>{prod.barcode}</td>
-                <td>$ {prod.price}</td>
+                <td>$ {Number(prod.price).toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
