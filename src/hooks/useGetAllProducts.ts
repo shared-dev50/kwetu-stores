@@ -1,16 +1,20 @@
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { Product } from "../entities/types";
 import APIClient from "../services/apiClient";
+import { useAuthStore } from "../stores/useAuthStore";
 
 // Initialize APIClient
 const apiClient = new APIClient<Product>("/api/products");
 
-const useGetAllProducts = (): UseQueryResult<Product[], Error> => {
+const useGetAllProducts = () => {
+  const token = useAuthStore(s => s.token);
+
   return useQuery({
     queryKey: ["products"],
     queryFn: () => apiClient.getAll(),
-    staleTime: 24 * 60 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    enabled: !!token,
   });
 };
 

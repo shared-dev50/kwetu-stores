@@ -10,3 +10,14 @@ export interface CartItem {
   product: Product;
   quantity: number;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  role: "cashier" | "manager";
+}
+
+export interface LoginCredentials {
+  name: string;
+  pin: string;
+}
