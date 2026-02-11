@@ -1,8 +1,17 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useAuthStore } from "../stores/useAuthStore";
 
 const Navbar = () => {
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? "text-[#F05A28]" : "";
+
+  const logout = useAuthStore(s => s.logout);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <>
@@ -42,9 +51,15 @@ const Navbar = () => {
                 Settings
               </NavLink>
             </li>
-            <li>
-              <a>Logout</a>
-            </li>
+            <div className="border-t pt-4 border-base-300">
+              <div className="px-4 mb-2"></div>
+              <button
+                onClick={handleLogout}
+                className="btn btn-error btn-outline btn-sm w-full"
+              >
+                Logout
+              </button>
+            </div>
           </ul>
         </div>
       </div>

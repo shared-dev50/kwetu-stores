@@ -6,7 +6,7 @@ interface Product {
   id?: number;
   barcode: string;
   name: string;
-  price: number; // Keep this as number
+  price: number;
   created_at?: string;
 }
 

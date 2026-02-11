@@ -1,6 +1,8 @@
 import { FaUserCircle, FaArrowUp, FaArrowDown } from "react-icons/fa";
+import { useAuthStore } from "../stores/useAuthStore";
 
 export default function Dashboard() {
+  const user = useAuthStore(s => s.user);
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -17,7 +19,7 @@ export default function Dashboard() {
           />
           <div className="flex items-center gap-2">
             <FaUserCircle size={28} />
-            <span className="font-medium">John Doe</span>
+            <span className="font-medium">{user?.name}</span>
           </div>
         </div>
       </div>
