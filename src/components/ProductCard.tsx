@@ -1,30 +1,40 @@
+import type { Product } from "../entities/types";
+import { useCartStore } from "../stores/useCartStore"; // Import your store
+
 interface ProductCardProps {
-  product: {
-    barcode: string;
-    name: string;
-    price: string | number;
-  };
-  onAddToCart: (product: ProductCardProps["product"]) => void;
+  product: Product;
 }
 
-const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
+const ProductCard = ({ product }: ProductCardProps) => {
+  const addItem = useCartStore(state => state.addItem);
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addItem({
+      product,
+      quantity: 1,
+    });
+  };
+
   return (
-    <div className="card bg-base-100 shadow hover:shadow-lg cursor-pointer">
+    <div className="card bg-base-100 shadow hover:shadow-lg transition-all border border-base-200">
       <div className="card-body p-4">
         <h2 className="font-semibold truncate">{product.name}</h2>
+        <p className="text-xl font-bold text-primary">
+          ${Number(product.price).toFixed(2)}
+        </p>
 
-        <p className="text-xl font-bold">{product.price}</p>
+        <div className="mt-2 flex justify-between items-center">
+          <span className="badge badge-success badge-sm">In stock</span>
+          <span className="text-xs opacity-50">SKU: {product.id}</span>
+        </div>
 
-        <div className="mt-2">
-          <span className="badge badge-success">In stock</span>
+        <div className="card-actions mt-4">
+          <button className="btn btn-primary btn-sm w-full" onClick={handleAdd}>
+            Add to Cart
+          </button>
         </div>
       </div>
-      <button
-        className="btn btn-primary mt-2"
-        onClick={() => onAddToCart(product)}
-      >
-        Add to Cart
-      </button>
     </div>
   );
 };
