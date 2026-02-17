@@ -8,6 +8,7 @@ import Inventory from "../pages/Inventory";
 import ProtectedRoute from "./ProtectedRoute";
 import Login from "../pages/Login";
 import Layout from "../pages/Layout";
+import CheckoutSuccess from "../pages/CheckoutSuccess";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,8 @@ const router = createBrowserRouter([
           { index: true, element: <Dashboard /> },
           { path: "products", element: <Products /> },
           { path: "invoices", element: <Invoices /> },
+
+          { path: "checkout-success", element: <CheckoutSuccess /> },
 
           {
             element: <ProtectedRoute allowedRoles={["manager"]} />,

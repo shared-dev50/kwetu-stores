@@ -1,27 +1,14 @@
-import CartPanel from "../components/Cart";
-import ProductCard from "../components/ProductCard";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type { CartItem, Product } from "../entities/types";
+import { useEffect, useRef, useState } from "react";
 import useGetAllProducts from "../hooks/useGetAllProducts";
+import ProductCard from "../components/ProductCard";
+import Cart from "../components/Cart";
+import { useCartStore } from "../stores/useCartStore"; // Import your store
 
 const Products = () => {
-  const [cart, setCart] = useState<CartItem[]>([]);
-
+  const addItem = useCartStore(s => s.addItem);
   const { data: products } = useGetAllProducts();
 
-  const handleAddToCart = useCallback((product: Product) => {
-    setCart(prev => {
-      const exists = prev.find(item => item.product.id === product.id);
-      if (exists) {
-        return prev.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item,
-        );
-      }
-      return [...prev, { product, quantity: 1 }];
-    });
-  }, []);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // BARCODE SCANNING LOGIC
   const scanBufferRef = useRef("");
@@ -40,68 +27,65 @@ const Products = () => {
           const foundProduct = products?.find(
             p => p.barcode === scanBufferRef.current,
           );
-          if (foundProduct) handleAddToCart(foundProduct);
+
+          if (foundProduct) {
+            addItem({ product: foundProduct, quantity: 1 });
+          }
           scanBufferRef.current = "";
         }
-        if (scanTimeout.current) clearTimeout(scanTimeout.current);
         return;
       }
 
       if (e.key.length === 1) {
         scanBufferRef.current += e.key;
-
         if (scanTimeout.current) clearTimeout(scanTimeout.current);
-
         scanTimeout.current = setTimeout(() => {
           scanBufferRef.current = "";
-        }, 2000);
+        }, 300);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [products, addItem]);
 
-    // Cleanup function
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      if (scanTimeout.current) clearTimeout(scanTimeout.current);
-    };
-  }, [products, handleAddToCart]);
+  // Filter the products based on the search query
+  const filteredProducts = products?.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
 
   return (
-    <div className="h-full flex">
-      <div className="flex-1 p-6 space-y-4">
-        <div className="flex items-center gap-4">
+    <div className="h-full flex bg-base-200">
+      <div className="flex-1 p-6 space-y-4 overflow-y-auto">
+        {/* Toolbar */}
+        <div className="flex items-center gap-4 bg-base-100 p-4 rounded-xl shadow-sm">
           <input
             type="text"
-            placeholder="Search product..."
+            placeholder="Search by name or scan barcode..."
             className="input input-bordered w-full max-w-md"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
           />
 
-          <select className="select select-bordered">
+          <select className="select select-bordered hidden md:block">
             <option>All Categories</option>
-            <option>Food</option>
-            <option>Household</option>
-          </select>
-
-          <select className="select select-bordered">
-            <option>All Stock</option>
-            <option>Low Stock</option>
-            <option>Out of Stock</option>
           </select>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {products?.map(prod => (
-            <ProductCard
-              key={prod.id}
-              product={prod}
-              onAddToCart={handleAddToCart}
-            />
+        {/* Product Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {filteredProducts?.map(prod => (
+            <ProductCard key={prod.id} product={prod} />
           ))}
+
+          {filteredProducts?.length === 0 && (
+            <div className="col-span-full text-center py-20 opacity-50">
+              No products found matching "{searchQuery}"
+            </div>
+          )}
         </div>
       </div>
-
-      <CartPanel cart={cart} setCart={setCart} />
+      <Cart />
     </div>
   );
 };
